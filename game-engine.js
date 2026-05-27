@@ -22,6 +22,8 @@ const menus = {
 };
 const fpsEl = document.getElementById('fps-counter');
 const blurToggle = document.getElementById('blur-toggle');
+const fpsLimitSelect = document.getElementById('fps-limit');
+const resScaleSelect = document.getElementById('res-scale');
 
 // --- GAME STATE ---
 let playerHealth = 100;
@@ -50,7 +52,14 @@ document.getElementById('back-to-menu').onclick = () => {
     menus.main.style.display = 'flex';
 };
 
-// --- FPS TRACKING ---
+// --- SETTINGS LISTENER INPUT CHANGED ENGINE HOOKS ---
+resScaleSelect.onchange = () => {
+    const scale = parseFloat(resScaleSelect.value);
+    const maxDevicePixelRatio = Math.min(window.devicePixelRatio, 2);
+    renderer.setPixelRatio(maxDevicePixelRatio * scale);
+};
+
+// --- FPS TRACKING & PERFORMANCE LOOP HANDLING ---
 let frames = 0;
 let prevTime = performance.now();
 function updateFPS() {
@@ -318,13 +327,29 @@ document.addEventListener('keyup', (e) => { if (move.hasOwnProperty(e.key.toLowe
 
 // --- MAIN LOOP ---
 let lastTime = performance.now();
+let frameTimer = 0;
+
 function animate() {
+    // RUNS UNLIMITED ANIMATION CALL LOOPS
     requestAnimationFrame(animate);
-    updateFPS();
     
     const time = performance.now();
     const delta = Math.min((time - lastTime) / 1000, 0.1);
+    
+    // ADJUSTABLE DELAY FOR ENGINE RENDER THROTTLING (FPS LIMITER IMPLEMENTATION)
+    const limitValue = fpsLimitSelect.value;
+    if (limitValue !== "UNCAPPED") {
+        const targetInterval = 1000 / parseInt(limitValue);
+        frameTimer += (time - lastTime);
+        if (frameTimer < targetInterval) {
+            lastTime = time;
+            return;
+        }
+        frameTimer = frameTimer % targetInterval;
+    }
+    
     lastTime = time;
+    updateFPS();
 
     if (controls.isLocked) {
         spawnTimer += delta; if (spawnTimer >= 20) { spawnEnemies(10); spawnTimer = 0; }
@@ -357,7 +382,7 @@ function animate() {
         }
         bullets.forEach((b, i) => { b.mesh.position.addScaledVector(b.dir, 200 * delta); if ((b.time += delta) > 2) { scene.remove(b.mesh); bullets.splice(i, 1); } });
         
-        // --- SETTINGS INTEGRATION ---
+        // --- MOTION BLUR DESIGN HOOK ---
         renderer.autoClearColor = (blurToggle.value !== "ON");
 
         recoil = THREE.MathUtils.lerp(recoil, 0, 0.1);
