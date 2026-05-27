@@ -6,6 +6,17 @@ body {
     user-select: none;
 }
 
+/* Ensure the 3D canvas is forced behind all HTML UI overlays */
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1 !important;
+    pointer-events: none; /* Prevents canvas from blocking clicks before pointer lock */
+}
+
 #crosshair { 
     position: absolute; 
     top: 50%; 
@@ -20,6 +31,7 @@ body {
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.8); 
 }
 
+/* Menu containers brought to the absolute front layer and made fully interactive */
 #menu-container, #settings-container, #weapon-container { 
     position: absolute; 
     inset: 0; 
@@ -29,9 +41,9 @@ body {
     align-items: center; 
     justify-content: center; 
     color: white; 
-    z-index: 2000; 
+    z-index: 9999 !important; 
+    pointer-events: all !important; 
     backdrop-filter: blur(20px); 
-    pointer-events: all; 
 }
 
 #settings-container, #weapon-container { 
@@ -46,6 +58,7 @@ body {
     text-align: center; 
     width: 360px; 
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+    pointer-events: auto;
 }
 
 h1 { 
@@ -64,6 +77,8 @@ h2 {
 }
 
 .btn { 
+    position: relative;
+    z-index: 10000;
     width: 100%; 
     padding: 15px; 
     margin: 10px 0; 
@@ -72,7 +87,8 @@ h2 {
     border: none; 
     border-radius: 8px; 
     font-weight: 700; 
-    cursor: pointer; 
+    cursor: pointer !important; 
+    pointer-events: auto !important;
     text-transform: uppercase; 
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -100,6 +116,7 @@ h2 {
     border-radius: 4px; 
     outline: none; 
     width: 140px; 
+    cursor: pointer;
 }
 
 #fps-counter { 
