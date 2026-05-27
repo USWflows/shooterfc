@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShooterFC - Cinematic Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="damage-flash"></div>
+    <div id="crosshair"></div>
+    <div id="fps-counter">FPS: --</div>
+    <div id="kill-counter">KILLS: 0</div>
+    
+    <div id="health-container">
+        <div id="health-text">HEALTH: 100%</div>
+        <div id="health-bar"></div>
+    </div>
+
+    <div id="menu-container">
+        <div class="menu-card">
+            <h1>SHOOTERFC PRO</h1>
+            <button class="btn" id="start-btn">Resume Simulator</button>
+            <button class="btn" id="open-weapons">Loadout</button>
+            <button class="btn" id="open-settings">Graphics</button>
+        </div>
+    </div>
+
+    <div id="weapon-container">
+        <div class="menu-card">
+            <h2>SELECT ARSENAL</h2>
+            <button class="btn" id="select-rifle">Assault Rifle</button>
+            <button class="btn" id="select-shotgun">Shotgun</button>
+            <button class="btn" id="select-sniper">Sniper</button>
+            <button class="btn" id="select-smg">SMG</button>
+            <button class="btn" id="select-pistol">Pistol</button>
+            <button class="btn" id="back-from-weapons" style="background: rgba(255,255,255,0.05); color: white;">Back</button>
+        </div>
+    </div>
+
+    <div id="settings-container">
+        <div class="menu-card">
+            <h2>GRAPHICS</h2>
+            
+            <div class="setting-row">
+                <span>RESOLUTION:</span>
+                <select id="res-toggle">
+                    <option value="native">Native (Window)</option>
+                    <option value="1080">1080p (FHD)</option>
+                    <option value="1440">1440p (QHD)</option>
+                    <option value="2160">4K (UHD)</option>
+                    <option value="720">720p (Performance)</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <span>MAX FPS:</span>
+                <select id="fps-toggle">
+                    <option value="unlocked">Unlocked</option>
+                    <option value="120">120 FPS</option>
+                    <option value="60">60 FPS</option>
+                    <option value="30">30 FPS</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <span>MOTION BLUR:</span>
+                <select id="blur-toggle">
+                    <option>OFF</option>
+                    <option>ON</option>
+                </select>
+            </div>
+            
+            <button class="btn" id="back-to-menu">Apply Settings</button>
+        </div>
+    </div>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module" src="game.js"></script>
+</body>
+</html>
