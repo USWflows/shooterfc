@@ -33,6 +33,30 @@ const healthTextEl = document.getElementById('health-text');
 const damageFlashEl = document.getElementById('damage-flash');
 const killCounterEl = document.getElementById('kill-counter');
 
+// --- CONTROLS & STATE ENGINE ---
+const controls = new PointerLockControls(camera, document.body);
+const keys = { w: false, a: false, s: false, d: false };
+let isDriving = false;
+let recoilOffset = new THREE.Vector3();
+
+// Setup camera initial height
+camera.position.y = 2.0;
+
+controls.addEventListener('lock', () => {
+    menus.main.style.display = 'none';
+    menus.wpn.style.display = 'none';
+    menus.set.style.display = 'none';
+});
+
+controls.addEventListener('unlock', () => {
+    if (menus.wpn.style.display !== 'flex' && menus.set.style.display !== 'flex') {
+        menus.main.style.display = 'flex';
+    }
+});
+
+document.getElementById('start-btn').onclick = () => controls.lock();
+
+// --- SYSTEM INTERFACES ---
 function damagePlayer(amount) {
     playerHealth = Math.max(0, playerHealth - amount);
     healthBarEl.style.width = playerHealth + '%';
@@ -62,10 +86,11 @@ function updateResolution() {
     camera.updateProjectionMatrix();
 }
 
-document.getElementById('open-settings').onclick = () => { 
-    menus.main.style.display = 'none'; 
-    menus.set.style.display = 'flex'; 
-};
+// Menu Navigations
+document.getElementById('open-settings').onclick = () => { menus.main.style.display = 'none'; menus.set.style.display = 'flex'; };
+document.getElementById('back-to-menu').onclick = () => { menus.set.style.display = 'none'; menus.main.style.display = 'flex'; updateResolution(); };
+document.getElementById('open-weapons').onclick = () => { menus.main.style.display = 'none'; menus.wpn.style.display = 'flex'; };
+document.getElementById('back-from-weapons').onclick = () => { menus.wpn.style.display = 'none'; menus.main.style.display = 'flex'; };
 
 let frames = 0, prevTime = performance.now();
 function updateFPS() {
@@ -90,7 +115,7 @@ sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
 scene.add(sun);
 scene.add(new THREE.AmbientLight(0x111625, 0.8));
 
-// --- CINEMATIC GPU-SHADER GROUND DESIGN ---
+// --- GROUND DESIGN ---
 const floorGeo = new THREE.PlaneGeometry(1600, 1600, 2, 2);
 const customGroundShader = {
     vertexShader: `
@@ -106,8 +131,6 @@ const customGroundShader = {
         }
     `,
     fragmentShader: `
-        uniform vec3 topColor;
-        uniform vec3 bottomColor;
         varying vec2 vUv;
         varying vec3 vNormal;
         varying vec3 vViewPosition;
@@ -154,7 +177,7 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true; 
 scene.add(floor);
 
-// --- BALANCED TACTICAL FOLIAGE ---
+// --- TACTICAL FOLIAGE ---
 const grassCount = 13000;
 const grassGeo = new THREE.PlaneGeometry(0.14, 0.85); 
 grassGeo.translate(0, 0.42, 0); 
@@ -306,7 +329,9 @@ class Enemy {
     }
     die(hitDirection, power) {
         if (this.isDead) return;
-        this.isDead = true; killCount++; killCounterEl.innerText = "KILLS: " + killCount;
+        this.isDead = true; 
+        killCount++; 
+        killCounterEl.innerText = "KILLS: " + killCount;
         this.physicsVel.copy(hitDirection).multiplyScalar(power);
         this.rotVel.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(20);
         this.skinMat.color.setHex(0x110101); this.clothMat.color.setHex(0x050000);
@@ -400,32 +425,191 @@ const buildPistol = () => {
     g.add(slide, frame, grip, barrel); return g;
 };
 
-const rifle = buildRifle();
-const shotgun = buildShotgun(); shotgun.visible = false;
-const sniper = buildSniper(); sniper.visible = false;
-const smg = buildSMG(); smg.visible = false;
-const pistol = buildPistol(); pistol.visible = false;
+const weaponsList = [buildRifle(), buildShotgun(), buildSniper(), buildSMG(), buildPistol()];
+weaponsList.forEach(w => { w.visible = false; viewmodel.add(w); });
+weaponsList[0].visible = true; // Set Rifle active initially
 
-viewmodel.add(rifle, shotgun, sniper, smg, pistol); 
-viewmodel.position.set(0.42, -0.38, -0.7);
-camera.add(viewmodel); scene.add(camera);
+viewmodel.position.set(0.25, -0.3, -0.5);
+camera.add(viewmodel); 
+scene.add(camera);
 
-const bullets = [];
-const bulletGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.4, 6); bulletGeo.rotateX(Math.PI/2);
-const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffcc44 });
-
-// Complete placeholder function to finish out execution safely
-function fireWeapon() {
-    let count = 1, spread = 0, curRecoil = 0.22;
-    if (shotgun.visible) { 
-        count = 10; 
-        spread = 0.05;
-    }
-    // Execution pipeline logic ends here
-    console.log("Weapon Fired: Intact initialization state confirmed.");
+function setWeapon(index) {
+    weaponsList.forEach((w, i) => w.visible = (i === index));
 }
 
-// Global update / Window Resize binding updates fallback context 
-window.addEventListener('resize', () => {
-    updateResolution();
+// Menu Weapon Selector Handlers
+document.getElementById('select-rifle').onclick = () => setWeapon(0);
+document.getElementById('select-shotgun').onclick = () => setWeapon(1);
+document.getElementById('select-sniper').onclick = () => setWeapon(2);
+document.getElementById('select-smg').onclick = () => setWeapon(3);
+document.getElementById('select-pistol').onclick = () => setWeapon(4);
+
+// --- HITSCANRAY COMBAT FLUID ENGINE ---
+const raycaster = new THREE.Raycaster();
+const centerPoint = new THREE.Vector2(0, 0);
+
+function fireWeapon() {
+    if (!controls.isLocked) return;
+    
+    // Animate weapon visual kicking kickback kick
+    recoilOffset.z = 0.15;
+    recoilOffset.y = 0.05;
+
+    raycaster.setFromCamera(centerPoint, camera);
+    
+    // Extract interactive meshes out of enemy bounding hierarchies
+    const targets = [];
+    enemies.forEach(e => {
+        if (!e.isDead) {
+            e.group.traverse(child => {
+                if (child.isMesh) {
+                    child.userData.enemyParent = e; // Tag reference links
+                    targets.push(child);
+                }
+            });
+        }
+    });
+
+    const hits = raycaster.intersectObjects(targets);
+    if (hits.length > 0) {
+        const hitPoint = hits[0].point;
+        const targetMesh = hits[0].object;
+        const enemyObj = targetMesh.userData.enemyParent;
+        
+        spawnBlood(hitPoint);
+        
+        if (enemyObj) {
+            const lookVector = new THREE.Vector3();
+            camera.getWorldDirection(lookVector);
+            lookVector.y = 0.1; 
+            enemyObj.die(lookVector.normalize(), 25.0);
+        }
+    }
+}
+
+// --- IO CONTROLLER EVENT LISTENERS ---
+window.addEventListener('keydown', (e) => {
+    switch (e.key.toLowerCase()) {
+        case 'w': keys.w = true; break;
+        case 'a': keys.a = true; break;
+        case 's': keys.s = true; break;
+        case 'd': keys.d = true; break;
+        case 'e': 
+            if (controls.isLocked) {
+                isDriving = !isDriving;
+                if(isDriving) {
+                    cart.group.add(controls.getObject());
+                    controls.getObject().position.set(-0.5, 1.8, -0.2); // Seat player down inside cart
+                } else {
+                    scene.add(controls.getObject());
+                    camera.position.y = 2.0;
+                }
+            }
+            break;
+    }
 });
+
+window.addEventListener('keyup', (e) => {
+    switch (e.key.toLowerCase()) {
+        case 'w': keys.w = false; break;
+        case 'a': keys.a = false; break;
+        case 's': keys.s = false; break;
+        case 'd': keys.d = false; break;
+    }
+});
+
+window.addEventListener('mousedown', (e) => {
+    if(e.button === 0) fireWeapon();
+});
+
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// --- RENDER LOOP PROCESSING ---
+const clock = new THREE.Clock();
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    const delta = Math.min(clock.getDelta(), 0.1); // Clamp long frame spikes
+    updateFPS();
+
+    if (controls.isLocked) {
+        if (isDriving) {
+            cart.update(keys, delta);
+        } else {
+            // First Person Foot Movement Simulation Engine
+            const speed = 12.0;
+            const forward = new THREE.Vector3();
+            const side = new THREE.Vector3();
+            
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+            
+            side.crossVectors(camera.up, forward).normalize();
+
+            if (keys.w) controls.getObject().position.addScaledVector(forward, speed * delta);
+            if (keys.s) controls.getObject().position.addScaledVector(forward, -speed * delta);
+            if (keys.a) controls.getObject().position.addScaledVector(side, speed * delta);
+            if (keys.d) controls.getObject().position.addScaledVector(side, -side, speed * delta);
+        }
+    }
+
+    // Process Procedural Particle Physics
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.mesh.position.addScaledVector(p.vel, delta);
+        p.vel.y -= 9.8 * delta; // Constant gravity pull
+        p.life -= delta * 1.5;
+        p.mesh.scale.setScalar(p.life);
+        if (p.life <= 0) {
+            scene.remove(p.mesh);
+            p.mesh.geometry.dispose();
+            p.mesh.material.dispose();
+            particles.splice(i, 1);
+        }
+    }
+
+    // Perform Weapon Sway and Recoil Recovery Spring Interpolations
+    recoilOffset.z = THREE.MathUtils.lerp(recoilOffset.z, 0, 10 * delta);
+    recoilOffset.y = THREE.MathUtils.lerp(recoilOffset.y, 0, 10 * delta);
+    
+    viewmodel.position.set(
+        0.25, 
+        -0.3 + recoilOffset.y + (Math.sin(performance.now() * 0.005) * (keys.w || keys.s ? 0.02 : 0.002)), 
+        -0.5 + recoilOffset.z
+    );
+
+    // Update Live Active AI Agents
+    const playerWorldPos = new THREE.Vector3();
+    camera.getWorldPosition(playerWorldPos);
+    
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const shouldRemove = enemies[i].update(delta, playerWorldPos);
+        if (shouldRemove) {
+            enemies.splice(i, 1);
+        }
+    }
+
+    // Keep dynamic fallback waves alive if player clears space
+    if (enemies.filter(e => !e.isDead).length < 5) {
+        spawnEnemies(5);
+    }
+
+    // Process Motion Blur Simulation Post Effect Rule
+    if (blurToggle.value === "ON" && (keys.w || keys.a || keys.s || keys.d)) {
+        renderer.autoClearColor = false;
+        renderer.getContext().background = 'rgba(3, 5, 12, 0.4)';
+    } else {
+        renderer.autoClearColor = true;
+    }
+
+    renderer.render(scene, camera);
+}
+
+// Run loop initialization
+animate();
