@@ -319,35 +319,43 @@
 
         // --- ENEMIES ---
         class Enemy {
-            constructor(position) {
-                this.group = new THREE.Group();
-                const skinCol = new THREE.Color().setHSL(0.04, 0.4, 0.15 + Math.random() * 0.15);
-                const clothCol = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.3, 0.1);
-                
-                this.skinMat = new THREE.MeshStandardMaterial({ color: skinCol, roughness: 0.7 });
-                this.clothMat = new THREE.MeshStandardMaterial({ color: clothCol, roughness: 0.85 });
-                const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 }); 
-                
-                this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.5), this.clothMat); this.torso.position.y = 1.75; this.torso.castShadow = true;
-                this.head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), this.skinMat); this.head.position.y = 2.6; this.head.castShadow = true;
-                const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.22), this.skinMat); jaw.position.set(0, -0.16, 0.1);
-                const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.12), eyeMat); lEye.position.set(-0.14, 0.06, 0.22);
-                const rEye = lEye.clone(); rEye.position.set(0.14, 0.06, 0.22);
-                this.head.add(jaw, lEye, rEye);
-                
-                this.lArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.22), this.skinMat); this.lArm.position.set(-0.5, 2.15, 0.3); this.lArm.rotation.x = -1.3; this.lArm.castShadow = true;
-                this.rArm = this.lArm.clone(); this.rArm.position.set(0.45, 2.15, 0.3);
-                this.lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.25, 0.28), this.clothMat); this.lLeg.position.set(-0.24, 0.62, 0); this.lLeg.castShadow = true;
-                this.rLeg = this.lLeg.clone(); this.rLeg.position.set(0.22, 0.62, 0);
-                
-                this.group.add(this.torso, this.head, this.lArm, this.rArm, this.lLeg, this.rLeg);
-                this.group.position.copy(position);
-                this.group.scale.setScalar(0.95 + Math.random() * 0.3);
-                scene.add(this.group);
-                
-                this.isDead = false; this.deathTime = 0; this.speed = 4.0 + Math.random() * 2.5;
-                this.animOff = Math.random() * 6.28; this.physicsVel = new THREE.Vector3(); this.rotVel = new THREE.Vector3();
-                this.attackCooldown = 0;
+    constructor(position) {
+        this.group = new THREE.Group();
+        const skinCol = new THREE.Color().setHSL(0.04, 0.4, 0.15 + Math.random() * 0.15);
+        const clothCol = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.3, 0.1);
+        
+        this.skinMat = new THREE.MeshStandardMaterial({ color: skinCol, roughness: 0.7 });
+        this.clothMat = new THREE.MeshStandardMaterial({ color: clothCol, roughness: 0.85 });
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 }); 
+        
+        this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.5), this.clothMat); this.torso.position.y = 1.75; this.torso.castShadow = true;
+        this.head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), this.skinMat); this.head.position.y = 2.6; this.head.castShadow = true;
+        
+        // Fixed positioning for jaw and eyes relative to the head
+        const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.22), this.skinMat); jaw.position.set(0, -0.16, 0.1);
+        const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.12), eyeMat); lEye.position.set(-0.14, 0.06, 0.22);
+        const rEye = lEye.clone(); rEye.position.set(0.14, 0.06, 0.22);
+        this.head.add(jaw, lEye, rEye);
+        
+        this.lArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.22), this.skinMat); this.lArm.position.set(-0.5, 2.15, 0.3); this.lArm.rotation.x = -1.3; this.lArm.castShadow = true;
+        this.rArm = this.lArm.clone(); this.rArm.position.set(0.45, 2.15, 0.3);
+        this.lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.25, 0.28), this.clothMat); this.lLeg.position.set(-0.24, 0.62, 0); this.lLeg.castShadow = true;
+        this.rLeg = this.lLeg.clone(); this.rLeg.position.set(0.22, 0.62, 0);
+        
+        this.group.add(this.torso, this.head, this.lArm, this.rArm, this.lLeg, this.rLeg);
+        this.group.position.copy(position);
+        
+        // --- CHANGED: Shorter height adjustment ---
+        // Your player camera height is set to 1.8. 
+        // This keeps enemies around 1.4 to 1.6 units tall, making them noticeably shorter than you.
+        this.group.scale.setScalar(0.75 + Math.random() * 0.1);
+        
+        scene.add(this.group);
+        
+        this.isDead = false; this.deathTime = 0; this.speed = 4.0 + Math.random() * 2.5;
+        this.animOff = Math.random() * 6.28; this.physicsVel = new THREE.Vector3(); this.rotVel = new THREE.Vector3();
+        this.attackCooldown = 0;
+    }
             }
             die(hitDirection, power) {
                 if (this.isDead) return;
