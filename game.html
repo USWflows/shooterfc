@@ -507,82 +507,138 @@
         });
         document.addEventListener('keyup', (e) => { if (move.hasOwnProperty(e.key.toLowerCase())) move[e.key.toLowerCase()] = false; });
 
-        // --- TICK / DELTA-LOCK FPS ENGINE ---
-        let lastTime = performance.now();
-        let frameTicketAccumulator = 0;
+        // --- TICK / MAIN ANIMATION LOOP ---
+        const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            const time = performance.now();
-            const delta = (time - lastTime) / 1000;
-            lastTime = time;
 
-            // Determine Target Intervals
-            const fpsLimitMode = fpsToggle.value;
-            if (fpsLimitMode !== 'unlocked') {
-                const targetFps = parseInt(fpsLimitMode);
-                const targetInterval = 1 / targetFps;
-                frameTicketAccumulator += delta;
-                
-                // Drop current processing ticket if interval requirement hasn't filled
-                if (frameTicketAccumulator < targetInterval) {
-                    return; 
-                }
-                // Retain balance overhead remainder
-                frameTicketAccumulator %= targetInterval;
-            }
-
+            const delta = Math.min(clock.getDelta(), 0.1); // Cap delta to prevent clipping issues on lag spikes
             updateFPS();
-            const executionDelta = Math.min(delta, 0.1);
 
             if (controls.isLocked) {
-                spawnTimer += executionDelta; if (spawnTimer >= 15) { spawnEnemies(8); spawnTimer = 0; }
                 if (isDriving) {
-                    cart.update(move, executionDelta);
-                    const offset = new THREE.Vector3(-0.5, 2.2, 0.2).applyQuaternion(cart.group.quaternion);
-                    camera.position.copy(cart.group.position).add(offset);
-                    camera.lookAt(cart.group.position.clone().add(new THREE.Vector3(0, 1.4, 12).applyQuaternion(cart.group.quaternion)));
-                    enemies.forEach(en => { if (!en.isDead && cart.group.position.distanceTo(en.group.position) < 3.8) en.die(new THREE.Vector3().subVectors(en.group.position, cart.group.position).normalize(), Math.abs(cart.speed) * 55); });
-                } else {
-                    velocity.x -= velocity.x * 10 * executionDelta; velocity.z -= velocity.z * 10 * executionDelta;
-                    if (move.w) velocity.z -= 420 * executionDelta; if (move.s) velocity.z += 420 * executionDelta;
-                    if (move.a) velocity.x -= 420 * executionDelta; if (move.d) velocity.x += 420 * executionDelta;
-                    controls.moveRight(velocity.x * executionDelta); controls.moveForward(-velocity.z * executionDelta);
-                    camera.position.y = 3.5;
-                }
+                    // --- DRIVING MODE ---
+                    cart.update(move, delta);
+                    
+                    // Attach camera to the golf cart (overhead/back view)
+                    const relativeCameraOffset = new THREE.Vector3(0, 2.5, -5);
+                    const cameraOffset = relativeCameraOffset.applyMatrix4(cart.group.matrixWorld);
+                    camera.position.copy(cameraOffset);
+                    
+                    // Make camera look slightly ahead of the cart
+                    const targetLook = new THREE.Vector3(0, 1, 4).applyMatrix4(cart.group.matrixWorld);
+                    camera.lookAt(targetLook);
 
-                for(let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].mesh.position.addScaledVector(particles[i].vel, executionDelta);
-                    particles[i].vel.y -= 12 * executionDelta; particles[i].life -= executionDelta;
-                    if(particles[i].life <= 0) { scene.remove(particles[i].mesh); particles.splice(i,1); }
-                }
-
-                for (let bi = bullets.length - 1; bi >= 0; bi--) {
-                    const b = bullets[bi]; b.mesh.position.addScaledVector(b.dir, 240 * executionDelta); b.time += executionDelta;
-                    let removed = false;
-                    for (let i = enemies.length - 1; i >= 0; i--) {
-                        if (!enemies[i].isDead && b.mesh.position.distanceTo(enemies[i].group.position.clone().add(new THREE.Vector3(0, 1.8, 0))) < 1.6) { 
-                            spawnBlood(b.mesh.position); enemies[i].die(b.dir, 12); 
-                            scene.remove(b.mesh); bullets.splice(bi, 1); removed = true; break; 
+                    // Optional: Run over enemies with the cart
+                    enemies.forEach(enemy => {
+                        if (!enemy.isDead && cart.group.position.distanceTo(enemy.group.position) < 3.0 && Math.abs(cart.speed) > 0.2) {
+                            const hitDir = new THREE.Vector3().subVectors(enemy.group.position, cart.group.position).normalize();
+                            enemy.die(hitDir, Math.abs(cart.speed) * 35);
+                            spawnBlood(enemy.group.position);
                         }
-                    }
-                    if (!removed && b.time > 1.8) { scene.remove(b.mesh); bullets.splice(bi, 1); }
+                    });
+                } else {
+                    // --- FPS WALKING MODE ---
+                    const speedMultiplier = 18.0;
+                    velocity.x = (Number(move.d) - Number(move.a)) * speedMultiplier * delta;
+                    velocity.z = (Number(move.w) - Number(move.s)) * speedMultiplier * delta;
+
+                    controls.moveRight(velocity.x);
+                    controls.moveForward(velocity.z);
+                    
+                    // Keep player glued to the ground level
+                    camera.position.y = 1.8; 
                 }
 
-                for (let i = enemies.length - 1; i >= 0; i--) { if(enemies[i].update(executionDelta, camera.position)) enemies.splice(i, 1); }
-                
-                renderer.autoClearColor = (blurToggle.value !== "ON");
-                recoil = THREE.MathUtils.lerp(recoil, 0, 0.12); viewmodel.position.z = -0.7 + recoil;
+                // --- SPAWN SYSTEM ---
+                spawnTimer += delta;
+                if (spawnTimer > 4.0 && enemies.filter(e => !e.isDead).length < 25) {
+                    spawnEnemies(3);
+                    spawnTimer = 0;
+                }
             }
+
+            // --- ANIMATE VIEWMODEL RECOIL ---
+            recoil = THREE.MathUtils.lerp(recoil, 0, 0.1);
+            viewmodel.position.z = -0.7 - recoil;
+            viewmodel.position.y = -0.38 + (recoil * 0.5);
+
+            // --- UPDATE BULLETS & RAYCAST COLLISIONS ---
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.time += delta;
+                const speed = 180 * delta;
+                
+                // Save previous position for raycasting trail accuracy
+                const oldPos = b.mesh.position.clone();
+                b.mesh.position.addScaledVector(b.dir, speed);
+
+                // Setup raycast from old position to new position to detect hits
+                const raycaster = new THREE.Raycaster(oldPos, b.dir, 0, speed + 0.5);
+                
+                let hitDetected = false;
+                for (let j = 0; j < enemies.length; j++) {
+                    const enemy = enemies[j];
+                    if (enemy.isDead) continue;
+
+                    const intersects = raycaster.intersectObjects(enemy.group.children);
+                    if (intersects.length > 0) {
+                        hitDetected = true;
+                        enemy.die(b.dir, 15);
+                        spawnBlood(intersects[0].point);
+                        break;
+                    }
+                }
+
+                // Remove bullet if it hits something or travels for more than 2 seconds
+                if (hitDetected || b.time > 2.0) {
+                    scene.remove(b.mesh);
+                    b.mesh.geometry.dispose();
+                    b.mesh.material.dispose();
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // --- UPDATE PARTICLES (BLOOD SPLATTERS) ---
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.addScaledVector(p.vel, delta);
+                p.vel.y -= 9.8 * delta; // Gravity effect
+                p.life -= delta * 1.5;
+                p.mesh.scale.setScalar(p.life);
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+
+            // --- UPDATE ENEMIES ---
+            const playerPosForAI = isDriving ? cart.group.position : camera.position;
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const isRemoved = enemies[i].update(delta, playerPosForAI);
+                if (isRemoved) {
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Apply screen motion blur effect based on toggle selection
+            if (blurToggle.value === "ON" && controls.isLocked) {
+                renderer.domElement.style.filter = `blur(${Math.min(2, Math.abs(cart.speed) * 1.5)}px)`;
+            } else {
+                renderer.domElement.style.filter = 'none';
+            }
+
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('resize', () => {
-            updateResolution();
-        });
-
-        updateResolution();
+        // Set starting position for the player camera so you aren't under the map
+        camera.position.set(25, 1.8, 32);
+        
+        // Start the engine loop
         animate();
     </script>
 </body>
