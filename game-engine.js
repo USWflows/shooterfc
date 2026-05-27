@@ -99,7 +99,7 @@ function spawnBlood(pos) {
     }
 }
 
-// --- VEHICLE CLASS (WITH HAND JOINTS) ---
+// --- VEHICLE CLASS ---
 class GolfCart {
     constructor() {
         this.group = new THREE.Group();
