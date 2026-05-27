@@ -3,15 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShooterFC - Cinematic Edition</title>
-    <link rel="stylesheet" href="style.css">
+    <title>UHD 4K Grassland Simulator - Ultimate Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #c3e3ff; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); z-index: 10; pointer-events: none; }
+        
+        /* MODERN GLASSMORPHIC HUD LAYOUTS WITH BACKDROP BLUR */
+        #menu-container { 
+            position: absolute; inset: 0; 
+            background: transparent; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; z-index: 2000; pointer-events: all; 
+        }
+
+        #settings-container, #weapon-container { 
+            position: absolute; inset: 0; 
+            background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; z-index: 2000; backdrop-filter: blur(12px); pointer-events: all; 
+            display: none;
+        }
+        
+        .menu-card { 
+            background: rgba(255, 255, 255, 0.07); 
+            padding: 40px; 
+            border-radius: 28px; 
+            border: 1px solid rgba(255,255,255,0.18); 
+            text-align: center; 
+            width: 360px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 25px 55px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn { 
+            width: 100%; padding: 16px; margin: 12px 0; 
+            background: white; color: black; border: none; 
+            border-radius: 8px; font-weight: 800; cursor: pointer; 
+            text-transform: uppercase; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            font-size: 13px; letter-spacing: 0.8px;
+        }
+        .btn:hover { background: #55aa44; color: white; transform: scale(1.04); box-shadow: 0 0 20px rgba(85, 170, 68, 0.4); }
+        
+        #fps-counter { position: absolute; bottom: 15px; right: 20px; color: #00ff66; font-family: monospace; z-index: 5; font-size: 18px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #kill-counter { position: absolute; top: 25px; right: 25px; color: white; font-size: 26px; font-weight: 900; z-index: 5; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+        #damage-flash { position: absolute; inset: 0; background: red; opacity: 0; pointer-events: none; z-index: 1500; transition: opacity 0.05s; }
+        
+        #health-container { position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); width: 320px; height: 22px; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.8); border-radius: 11px; overflow: hidden; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        #health-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff3333, #ff5555); transition: width 0.1s; }
+        #health-text { position: absolute; width: 100%; text-align: center; color: white; font-weight: 900; font-size: 13px; line-height: 22px; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
+        .setting-row {
+            display: flex; justify-content: space-between; align-items: center; margin: 20px 0; font-size: 13px; font-weight: 800; letter-spacing: 0.6px;
+        }
+        .setting-row select {
+            padding: 8px 12px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; font-weight: bold; cursor: pointer; outline: none; font-size: 13px;
+        }
+        .setting-row select option { background: #141414; color: white; }
+    </style>
 </head>
 <body>
     <div id="damage-flash"></div>
     <div id="crosshair"></div>
     <div id="fps-counter">FPS: --</div>
     <div id="kill-counter">KILLS: 0</div>
-    
     <div id="health-container">
         <div id="health-text">HEALTH: 100%</div>
         <div id="health-bar"></div>
@@ -19,44 +73,41 @@
 
     <div id="menu-container">
         <div class="menu-card">
-            <h1>SHOOTERFC PRO</h1>
-            <button class="btn" id="start-btn">Resume Simulator</button>
+            <h1 style="color:#55aa44; font-size: 36px; letter-spacing: 2px; margin-top: 0; margin-bottom: 25px; font-weight: 900; text-shadow: 0 4px 10px rgba(0,0,0,0.2);">SHOOTERFC</h1>
+            <button class="btn" id="start-btn">Start Simulation</button>
             <button class="btn" id="open-weapons">Loadout</button>
-            <button class="btn" id="open-settings">Graphics</button>
+            <button class="btn" id="open-settings">Settings</button>
         </div>
     </div>
 
     <div id="weapon-container">
         <div class="menu-card">
-            <h2>SELECT ARSENAL</h2>
+            <h2 style="margin-top:0; font-weight:900; font-size: 24px; letter-spacing: 1px; color: #55aa44;">SELECT ARSENAL</h2>
             <button class="btn" id="select-rifle">Assault Rifle</button>
             <button class="btn" id="select-shotgun">Shotgun</button>
-            <button class="btn" id="select-sniper">Sniper</button>
-            <button class="btn" id="select-smg">SMG</button>
+            <button class="btn" id="select-sniper">Sniper Rifle</button>
+            <button class="btn" id="select-smg">Tactical SMG</button>
             <button class="btn" id="select-pistol">Pistol</button>
-            <button class="btn" id="back-from-weapons" style="background: rgba(255,255,255,0.05); color: white;">Back</button>
+            <button class="btn" id="back-from-weapons" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.2);">Back</button>
         </div>
     </div>
 
     <div id="settings-container">
         <div class="menu-card">
-            <h2>GRAPHICS</h2>
+            <h2 style="margin-top:0; margin-bottom:25px; font-weight:900; font-size: 24px; letter-spacing: 1px; color: #55aa44;">SETTINGS</h2>
             
             <div class="setting-row">
-                <span>RESOLUTION:</span>
-                <select id="res-toggle">
-                    <option value="native">Native (Window)</option>
-                    <option value="1080">1080p (FHD)</option>
-                    <option value="1440">1440p (QHD)</option>
-                    <option value="2160">4K (UHD)</option>
-                    <option value="720">720p (Performance)</option>
+                <span>MOTION BLUR:</span>
+                <select id="blur-toggle">
+                    <option value="OFF">OFF</option>
+                    <option value="ON">ON</option>
                 </select>
             </div>
 
             <div class="setting-row">
-                <span>MAX FPS:</span>
-                <select id="fps-toggle">
-                    <option value="unlocked">Unlocked</option>
+                <span>MAX FPS LIMIT:</span>
+                <select id="fps-limit">
+                    <option value="UNCAPPED">UNCAPPED</option>
                     <option value="120">120 FPS</option>
                     <option value="60">60 FPS</option>
                     <option value="30">30 FPS</option>
@@ -64,27 +115,424 @@
             </div>
 
             <div class="setting-row">
-                <span>MOTION BLUR:</span>
-                <select id="blur-toggle">
-                    <option>OFF</option>
-                    <option>ON</option>
+                <span>RESOLUTION MULTIPLIER:</span>
+                <select id="res-scale">
+                    <option value="2.0">200% (UHD Super Sampling)</option>
+                    <option value="1.5">150% (High)</option>
+                    <option value="1.0" selected>100% (Native)</option>
+                    <option value="0.75">75% (Balanced)</option>
+                    <option value="0.5">50% (Performance)</option>
                 </select>
             </div>
-            
-            <button class="btn" id="back-to-menu">Apply Settings</button>
+
+            <button class="btn" id="back-to-menu" style="margin-top:25px; background: linear-gradient(135deg, #55aa44, #448833); color: white;">Save & Close</button>
         </div>
     </div>
 
-    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    <script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } } </script>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js';
+
+        // --- GRAPHICS RENDER CONFIG & COLOR CORRECTION ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xaaccff);
+        scene.fog = new THREE.FogExp2(0xaaccff, 0.007);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, precision: "highp", powerPreference: "high-performance" });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Advanced tone mapping config to brighten environment colors instantly
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.25; 
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- SYSTEM ENGINE UI ELEMENT HOOKS ---
+        const menus = { 
+            main: document.getElementById('menu-container'), 
+            wpn: document.getElementById('weapon-container'), 
+            set: document.getElementById('settings-container') 
+        };
+        const fpsEl = document.getElementById('fps-counter');
+        const blurToggle = document.getElementById('blur-toggle');
+        const fpsLimitSelect = document.getElementById('fps-limit');
+        const resScaleSelect = document.getElementById('res-scale');
+
+        // --- SIMULATOR GLOBAL STATES ---
+        let playerHealth = 100;
+        let killCount = 0;
+        const healthBarEl = document.getElementById('health-bar');
+        const healthTextEl = document.getElementById('health-text');
+        const damageFlashEl = document.getElementById('damage-flash');
+        const killCounterEl = document.getElementById('kill-counter');
+
+        function damagePlayer(amount) {
+            playerHealth = Math.max(0, playerHealth - amount);
+            healthBarEl.style.width = playerHealth + '%';
+            healthTextEl.innerText = "HEALTH: " + Math.round(playerHealth) + "%";
+            damageFlashEl.style.opacity = "0.5";
+            setTimeout(() => damageFlashEl.style.opacity = "0", 80);
+            if(playerHealth <= 0) { alert("SIMULATION OVER. ELIMINATIONS: " + killCount); location.reload(); }
+        }
+
+        // --- DROPDOWN HUD CONTROL INTERACTION ---
+        document.getElementById('open-settings').onclick = () => { menus.main.style.display = 'none'; menus.set.style.display = 'flex'; };
+        document.getElementById('back-to-menu').onclick = () => { menus.set.style.display = 'none'; menus.main.style.display = 'flex'; };
+        resScaleSelect.onchange = () => { renderer.setPixelRatio(window.devicePixelRatio * parseFloat(resScaleSelect.value)); };
+
+        // --- TRACK LIVE RUNTIME FPS ---
+        let frames = 0, prevTime = performance.now();
+        function updateFPS() {
+            frames++; const time = performance.now();
+            if (time >= prevTime + 1000) { fpsEl.innerText = "FPS: " + frames; frames = 0; prevTime = time; }
+        }
+
+        // --- WORLD GENERATION: LIGHTING, SKYBOX, HETEROGENEOUS GROUND ---
+        const sun = new THREE.DirectionalLight(0xffffff, 4.5);
+        sun.position.set(120, 250, 80);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048; sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 500;
+        const dSide = 150; sun.shadow.camera.left = -dSide; sun.shadow.camera.right = dSide; sun.shadow.camera.top = dSide; sun.shadow.camera.bottom = -dSide;
+        scene.add(sun, new THREE.AmbientLight(0xddeeff, 0.85));
+
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x224411, roughness: 0.9, metalness: 0.05 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+        // Highly-optimized high-density foliage instancing loops
+        const grassCount = 18000;
+        const grassGeo = new THREE.PlaneGeometry(0.12, 0.65);
+        const grassMat = new THREE.MeshStandardMaterial({ color: 0x66bb44, side: THREE.DoubleSide, alphaTest: 0.5, roughness: 0.6 });
+        const instancedGrass = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
+        const dummy = new THREE.Object3D();
+        for (let i = 0; i < grassCount; i++) {
+            dummy.position.set(Math.random() * 300 - 150, 0.32, Math.random() * 300 - 150);
+            dummy.rotation.y = Math.random() * Math.PI;
+            dummy.updateMatrix(); instancedGrass.setMatrixAt(i, dummy.matrix);
+        }
+        instancedGrass.castShadow = true; instancedGrass.receiveShadow = true; scene.add(instancedGrass);
+
+        // --- VFX BLOOD PARTICLES SYSTEM ---
+        const particles = [];
+        function spawnBlood(pos) {
+            for(let i=0; i<12; i++) {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), new THREE.MeshBasicMaterial({ color: 0x990000 }));
+                p.position.copy(pos);
+                const vel = new THREE.Vector3((Math.random()-0.5)*6, Math.random()*6 + 2, (Math.random()-0.5)*6);
+                scene.add(p); particles.push({ mesh: p, vel: vel, life: 0.8 });
             }
         }
-    </script>
 
-    <script type="module" src="game.js"></script>
+        // --- GROUND VEHICLE CLASS DESIGN ---
+        class GolfCart {
+            constructor() {
+                this.group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.3 });
+                const metalMat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.85, roughness: 0.2 });
+                const seatMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 });
+                const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.95 });
+                const rimMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.6, roughness: 0.3 });
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.2, roughness: 0 });
+
+                const base = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 3.8), bodyMat); base.position.y = 0.4; base.castShadow = true;
+                const fSeat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.9), seatMat); fSeat.position.set(0, 0.6, -0.1); fSeat.castShadow = true;
+                const bSeat = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.3, 0.8), seatMat); bSeat.position.set(0, 0.6, -1.3); bSeat.castShadow = true;
+                const dash = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.4, 0.4), bodyMat); dash.position.set(0, 1.0, 1.1);
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.1, 3.2), bodyMat); roof.position.set(0, 2.7, -0.2); roof.castShadow = true;
+                this.group.add(base, fSeat, bSeat, dash, roof);
+
+                [[-0.9, 1.2], [0.9, 1.2], [-0.9, -1.6], [0.9, -1.6]].forEach(p => {
+                    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.3), metalMat);
+                    pole.position.set(p[0], 1.55, p[1]); pole.castShadow = true; this.group.add(pole);
+                });
+
+                const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.8, 0.05), metalMat); winFrame.position.set(0, 1.4, 1.2); 
+                const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.6), glassMat); glass.position.z = 0.03; winFrame.add(glass); this.group.add(winFrame);
+
+                this.wheels = []; this.frontWheelHubs = [];
+                const wheelGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.28, 24);
+                const rimGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.3, 12);
+                const wPos = [{x:-0.96, z:1.3, f:true}, {x:0.96, z:1.3, f:true}, {x:-0.96, z:-1.3, f:false}, {x:0.96, z:-1.3, f:false}];
+
+                wPos.forEach(p => {
+                    const wg = new THREE.Group();
+                    const tire = new THREE.Mesh(wheelGeo, tireMat); tire.rotation.z = Math.PI/2; tire.castShadow = true;
+                    const rim = new THREE.Mesh(rimGeo, rimMat); rim.rotation.z = Math.PI/2;
+                    wg.add(tire, rim);
+                    if(p.f) {
+                        const hub = new THREE.Group(); hub.position.set(p.x, 0.36, p.z);
+                        hub.add(wg); this.group.add(hub); this.frontWheelHubs.push(hub);
+                    } else { wg.position.set(p.x, 0.36, p.z); this.group.add(wg); }
+                    this.wheels.push(wg);
+                });
+
+                this.steeringColumn = new THREE.Group(); this.steeringColumn.position.set(-0.5, 1.6, 0.7); this.steeringColumn.rotation.x = Math.PI / 12; 
+                const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4), metalMat); stand.position.set(0, -0.6, 0.2); stand.rotation.x = -Math.PI / 8;
+                this.steeringColumn.add(stand);
+
+                this.wheelShaft = new THREE.Group(); const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.025, 12, 40), seatMat); this.wheelShaft.add(wheel);
+
+                const createHand = (isLeft) => {
+                    const h = new THREE.Group(); const skin = new THREE.MeshStandardMaterial({ color: 0xdbac98, roughness: 0.6 });
+                    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), skin); palm.scale.set(1, 0.4, 1.2); h.add(palm);
+                    const joints = []; [-0.04, 0, 0.04].forEach(x => {
+                        const root = new THREE.Group(); root.position.set(isLeft ? x : -x, 0, 0.05);
+                        const seg = new THREE.Mesh(new THREE.CapsuleGeometry(0.015, 0.05), skin); seg.rotation.x = 1.1;
+                        const jnt = new THREE.Group(); jnt.add(seg); root.add(jnt); h.add(root); joints.push(jnt);
+                    }); return { h, joints };
+                };
+                const L = createHand(true); const R = createHand(false); L.h.position.set(-0.2, 0, 0.05); R.h.position.set(0.2, 0, 0.05);
+                this.handJoints = [...L.joints, ...R.joints]; this.wheelShaft.add(L.h, R.h); this.steeringColumn.add(this.wheelShaft); this.group.add(this.steeringColumn);
+
+                this.group.position.set(25, 0, 25); scene.add(this.group);
+                this.speed = 0; this.steerAngle = 0;
+            }
+            update(move, delta) {
+                if (move.w) this.speed = THREE.MathUtils.lerp(this.speed, 1.2, 0.04);
+                else if (move.s) this.speed = THREE.MathUtils.lerp(this.speed, -0.5, 0.04);
+                else this.speed *= 0.95;
+                const targetSteer = move.a ? 0.85 : (move.d ? -0.85 : 0);
+                this.steerAngle = THREE.MathUtils.lerp(this.steerAngle, targetSteer, 0.1);
+                this.group.rotation.y += this.steerAngle * this.speed * 2.2 * delta;
+                this.group.translateZ(this.speed * 24 * delta);
+                this.wheels.forEach(w => w.rotation.x += this.speed * 55 * delta);
+                this.frontWheelHubs.forEach(hub => hub.rotation.y = this.steerAngle * 0.6);
+                this.wheelShaft.rotation.z = this.steerAngle * 2.5;
+                this.handJoints.forEach(j => j.rotation.x = THREE.MathUtils.lerp(j.rotation.x, move.w ? 1.4 : 1.1, 0.1));
+            }
+        }
+        const cart = new GolfCart();
+
+        // --- COMPLEX PATROLLING ROBOTIC ENEMY ---
+        class Enemy {
+            constructor(position) {
+                this.group = new THREE.Group();
+                const variant = Math.random();
+                const skinCol = new THREE.Color().setHSL(0.35, 0.4, 0.25 + variant * 0.15);
+                const clothCol = new THREE.Color().setHSL(Math.random(), 0.2, 0.2);
+                const skinMat = new THREE.MeshStandardMaterial({ color: skinCol, roughness: 0.7 });
+                const clothMat = new THREE.MeshStandardMaterial({ color: clothCol, roughness: 0.8 });
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+
+                this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.5), clothMat); this.torso.position.y = 1.75; this.torso.castShadow = true;
+                this.head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skinMat); this.head.position.y = 2.6; this.head.castShadow = true;
+                const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.22), skinMat); jaw.position.set(0, -0.16, 0.1);
+                const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 0.1), eyeMat); lEye.position.set(-0.13, 0.06, 0.22);
+                const rEye = lEye.clone(); rEye.position.set(0.13, 0.06, 0.22); this.head.add(jaw, lEye, rEye);
+
+                this.lArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.22), skinMat); this.lArm.position.set(-0.48, 2.15, 0.35); this.lArm.rotation.x = -1.2; this.lArm.castShadow = true;
+                this.rArm = this.lArm.clone(); this.rArm.position.set(0.48, 2.15, 0.35);
+                this.lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.26, 1.25, 0.26), clothMat); this.lLeg.position.set(-0.24, 0.65, 0); this.lLeg.castShadow = true;
+                this.rLeg = this.lLeg.clone(); this.rLeg.position.set(0.24, 0.65, 0);
+
+                this.group.add(this.torso, this.head, this.lArm, this.rArm, this.lLeg, this.rLeg);
+                this.group.position.copy(position); this.group.scale.setScalar(0.95 + Math.random() * 0.25);
+                scene.add(this.group);
+
+                this.isDead = false; this.deathTime = 0; this.speed = 4.0 + Math.random() * 2.5;
+                this.animOff = Math.random() * 6.28; this.physicsVel = new THREE.Vector3(); this.rotVel = new THREE.Vector3();
+                this.attackCooldown = 0;
+            }
+            die(hitDirection, power) {
+                if (this.isDead) return; this.isDead = true; killCount++; killCounterEl.innerText = "KILLS: " + killCount;
+                this.physicsVel.copy(hitDirection).multiplyScalar(power);
+                this.rotVel.set(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).multiplyScalar(16);
+                this.group.traverse(c => { if (c.material) { c.material.color.setHex(0x550000); } });
+            }
+            update(delta, playerPos) {
+                if (!this.isDead) {
+                    const dist = this.group.position.distanceTo(playerPos);
+                    const dir = new THREE.Vector3().subVectors(playerPos, this.group.position); dir.y = 0; dir.normalize();
+                    if (dist > 3.6) { this.group.position.addScaledVector(dir, this.speed * delta); } 
+                    else { this.attackCooldown -= delta; if(this.attackCooldown <= 0) { damagePlayer(12); this.attackCooldown = 0.9; } }
+                    this.group.lookAt(playerPos.x, 0, playerPos.z);
+                    const t = (performance.now() * 0.0055) + this.animOff;
+                    this.lLeg.rotation.x = Math.sin(t) * 0.45; this.rLeg.rotation.x = Math.cos(t) * 0.45;
+                    this.group.position.y = Math.abs(Math.sin(t * 2)) * 0.12;
+                } else {
+                    this.group.position.addScaledVector(this.physicsVel, delta);
+                    this.group.rotation.x += this.rotVel.x * delta; this.group.rotation.y += this.rotVel.y * delta;
+                    this.physicsVel.multiplyScalar(0.95);
+                    if (this.group.position.y > 0.65) this.physicsVel.y -= 16 * delta;
+                    else { this.group.position.y = 0.65; this.physicsVel.y *= -0.25; }
+                    this.deathTime += delta;
+                    if (this.deathTime > 1.4) { this.group.scale.multiplyScalar(0.94); if (this.group.scale.x <= 0.04) { scene.remove(this.group); return true; } }
+                }
+                return false;
+            }
+        }
+        const enemies = [];
+        function spawnEnemies(count) { for(let i=0; i<count; i++) enemies.push(new Enemy(new THREE.Vector3((Math.random()-0.5)*260, 0, (Math.random()-0.5)*260-120))); }
+        spawnEnemies(16);
+
+        // --- DESIGNED DETAILED 3D WEAPONS ARSENAL MODELS ---
+        const viewmodel = new THREE.Group();
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x1c1d21, metalness: 0.85, roughness: 0.25 });
+        const polymerMat = new THREE.MeshStandardMaterial({ color: 0x2d2e30, metalness: 0.1, roughness: 0.5 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x8c663e, roughness: 0.7 }); // Wooden accents
+
+        // Weapon Platform 1: Assault Rifle
+        const rifle = new THREE.Group();
+        const rReceiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.14, 0.4), metalMat);
+        const rBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5), metalMat); rBarrel.rotation.x = Math.PI/2; rBarrel.position.set(0, 0.02, -0.45);
+        const rStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.3), accentMat); rStock.position.set(0, -0.01, 0.3);
+        const rMag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.08), polymerMat); rMag.position.set(0, -0.15, -0.1); rMag.rotation.x = 0.2;
+        rifle.add(rReceiver, rBarrel, rStock, rMag);
+
+        // Weapon Platform 2: Shotgun
+        const shotgun = new THREE.Group();
+        const sReceiver = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.45), polymerMat);
+        const sBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.48), metalMat); sBarrel.rotation.x = Math.PI/2; sBarrel.position.set(0, 0.03, -0.45);
+        const sTube = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42), metalMat); sTube.rotation.x = Math.PI/2; sTube.position.set(0, -0.02, -0.42);
+        const sStock = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.13, 0.35), accentMat); sStock.position.set(0, -0.02, 0.38);
+        shotgun.add(sReceiver, sBarrel, sTube, sStock); shotgun.visible = false;
+
+        // Weapon Platform 3: Sniper Rifle
+        const sniper = new THREE.Group();
+        const snReceiver = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 0.5), metalMat);
+        const snBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.8), metalMat); snBarrel.rotation.x = Math.PI/2; snBarrel.position.set(0, 0.03, -0.65);
+        const snScope = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.022, 0.28), polymerMat); snScope.rotation.x = Math.PI/2; snScope.position.set(0, 0.12, -0.05);
+        const snStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.15, 0.4), polymerMat); snStock.position.set(0, -0.03, 0.42);
+        sniper.add(snReceiver, snBarrel, snScope, snStock); sniper.visible = false;
+
+        // Weapon Platform 4: Tactical SMG
+        const smg = new THREE.Group();
+        const smgReceiver = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.18, 0.32), metalMat);
+        const smgBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.2), metalMat); smgBarrel.rotation.x = Math.PI/2; smgBarrel.position.set(0, 0.04, -0.25);
+        const smgMag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.28, 0.05), polymerMat); smgMag.position.set(0, -0.18, -0.05);
+        const smgGrip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.06), polymerMat); smgGrip.position.set(0, -0.12, 0.1); smgGrip.rotation.x = -0.3;
+        smg.add(smgReceiver, smgBarrel, smgMag, smgGrip); smg.visible = false;
+
+        // Weapon Platform 5: Pistol
+        const pistol = new THREE.Group();
+        const pSlide = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.07, 0.24), metalMat);
+        const pGrip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.13, 0.06), polymerMat); pGrip.position.set(0, -0.09, 0.05); pGrip.rotation.x = -0.3;
+        pistol.add(pSlide, pGrip); pistol.visible = false;
+
+        viewmodel.add(rifle, shotgun, sniper, smg, pistol); 
+        viewmodel.position.set(0.35, -0.35, -0.65); // Lock viewmodel into classic down-right position
+        camera.add(viewmodel); scene.add(camera);
+
+        // --- BULLETS & FIRELOGIC DEPENDING ON LOADOUT ---
+        const bullets = [];
+        function fireWeapon() {
+            let count = 1, spread = 0, curRecoil = 0.16;
+            if (shotgun.visible) { count = 10; spread = 0.12; curRecoil = 0.35; }
+            if (smg.visible) { spread = 0.06; curRecoil = 0.07; }
+            if (sniper.visible) { curRecoil = 0.5; }
+            if (pistol.visible) { curRecoil = 0.12; }
+            
+            recoil = curRecoil;
+            for(let i=0; i<count; i++) {
+                const b = new THREE.Mesh(new THREE.SphereGeometry(0.05), new THREE.MeshBasicMaterial({ color: 0xffea88 }));
+                viewmodel.getWorldPosition(b.position);
+                const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+                dir.x += (Math.random()-0.5)*spread; dir.y += (Math.random()-0.5)*spread; dir.normalize();
+                scene.add(b); bullets.push({ mesh: b, dir: dir, time: 0 });
+            }
+        }
+
+        // --- INPUT & POINTER LOCK EVENT HOOKS ---
+        const controls = new PointerLockControls(camera, document.body);
+        document.getElementById('start-btn').onclick = () => controls.lock();
+        document.getElementById('open-weapons').onclick = () => { menus.main.style.display='none'; menus.wpn.style.display='flex'; };
+        document.getElementById('back-from-weapons').onclick = () => { menus.wpn.style.display='none'; menus.main.style.display='flex'; };
+
+        const hideAll = () => [rifle, shotgun, sniper, smg, pistol].forEach(g => g.visible = false);
+        document.getElementById('select-rifle').onclick = () => { hideAll(); rifle.visible=true; menus.wpn.style.display='none'; controls.lock(); };
+        document.getElementById('select-shotgun').onclick = () => { hideAll(); shotgun.visible=true; menus.wpn.style.display='none'; controls.lock(); };
+        document.getElementById('select-sniper').onclick = () => { hideAll(); sniper.visible=true; menus.wpn.style.display='none'; controls.lock(); };
+        document.getElementById('select-smg').onclick = () => { hideAll(); smg.visible=true; menus.wpn.style.display='none'; controls.lock(); };
+        document.getElementById('select-pistol').onclick = () => { hideAll(); pistol.visible=true; menus.wpn.style.display='none'; controls.lock(); };
+
+        controls.addEventListener('lock', () => Object.values(menus).forEach(m => m.style.display = 'none'));
+        controls.addEventListener('unlock', () => menus.main.style.display = 'flex');
+
+        let move = { w: false, s: false, a: false, d: false };
+        let velocity = new THREE.Vector3(), recoil = 0, isDriving = false, spawnTimer = 0;
+
+        window.onmousedown = () => { if (controls.isLocked && !isDriving) fireWeapon(); };
+        document.addEventListener('keydown', (e) => { 
+            const k = e.key.toLowerCase(); if (move.hasOwnProperty(k)) move[k] = true;
+            if (k === 'e' && controls.isLocked && camera.position.distanceTo(cart.group.position) < 6) { isDriving = !isDriving; viewmodel.visible = !isDriving; }
+        });
+        document.addEventListener('keyup', (e) => { if (move.hasOwnProperty(e.key.toLowerCase())) move[e.key.toLowerCase()] = false; });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- MAIN ENGINE FRAME LOOP ---
+        let lastTime = performance.now();
+        let frameTimer = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = performance.now();
+            const delta = Math.min((time - lastTime) / 1000, 0.1);
+            
+            // INTUITIVE RUNTIME FPS LIMITER SYSTEM
+            const limitValue = fpsLimitSelect.value;
+            if (limitValue !== "UNCAPPED") {
+                const targetInterval = 1000 / parseInt(limitValue);
+                frameTimer += (time - lastTime);
+                if (frameTimer < targetInterval) { lastTime = time; return; }
+                frameTimer = frameTimer % targetInterval;
+            }
+            
+            lastTime = time;
+            updateFPS();
+
+            if (controls.isLocked) {
+                spawnTimer += delta; if (spawnTimer >= 15) { spawnEnemies(8); spawnTimer = 0; }
+                if (isDriving) {
+                    cart.update(move, delta);
+                    const offset = new THREE.Vector3(-0.5, 2.2, 0.2).applyQuaternion(cart.group.quaternion);
+                    camera.position.copy(cart.group.position).add(offset);
+                    camera.lookAt(cart.group.position.clone().add(new THREE.Vector3(0, 1.5, 10).applyQuaternion(cart.group.quaternion)));
+                    enemies.forEach(en => { if (!en.isDead && cart.group.position.distanceTo(en.group.position) < 3.6) en.die(new THREE.Vector3().subVectors(en.group.position, cart.group.position).normalize(), Math.abs(cart.speed) * 50); });
+                } else {
+                    velocity.x -= velocity.x * 10 * delta; velocity.z -= velocity.z * 10 * delta;
+                    if (move.w) velocity.z -= 420 * delta; if (move.s) velocity.z += 420 * delta;
+                    if (move.a) velocity.x -= 420 * delta; if (move.d) velocity.x += 420 * delta;
+                    controls.moveRight(velocity.x * delta); controls.moveForward(-velocity.z * delta);
+                    camera.position.y = 3.5;
+                }
+                for(let i=particles.length-1; i>=0; i--) {
+                    particles[i].mesh.position.addScaledVector(particles[i].vel, delta);
+                    particles[i].vel.y -= 11 * delta; particles[i].life -= delta;
+                    if(particles[i].life <= 0) { scene.remove(particles[i].mesh); particles.splice(i,1); }
+                }
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const gone = enemies[i].update(delta, camera.position);
+                    if (gone) enemies.splice(i, 1);
+                    else if (!enemies[i].isDead) {
+                        bullets.forEach((bu, bi) => {
+                            if (bu.mesh.position.distanceTo(enemies[i].group.position.clone().add(new THREE.Vector3(0, 1.8, 0))) < 1.6) { spawnBlood(bu.mesh.position); enemies[i].die(bu.dir, 12); scene.remove(bu.mesh); bullets.splice(bi, 1); }
+                        });
+                    }
+                }
+                bullets.forEach((b, i) => { b.mesh.position.addScaledVector(b.dir, 220 * delta); if ((b.time += delta) > 1.8) { scene.remove(b.mesh); bullets.splice(i, 1); } });
+                
+                // HOOK UP CANVAS COLOR FLUSH AUTO-CLEAR FLAGS (MOTION BLUR TOGGLE)
+                renderer.autoClearColor = (blurToggle.value !== "ON");
+
+                recoil = THREE.MathUtils.lerp(recoil, 0, 0.12);
+                viewmodel.position.z = -0.65 + recoil;
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
 </body>
 </html>
