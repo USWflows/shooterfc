@@ -513,7 +513,99 @@
             const k = e.key.toLowerCase(); if (move.hasOwnProperty(k)) move[k] = true;
             if (k === 'e' && controls.isLocked && camera.position.distanceTo(cart.group.position) < 7) { isDriving = !isDriving; viewmodel.visible = !isDriving; }
         });
-        document.addEventListener('keyup', (e) => { if (move.hasOwnProperty(e.key.toLowerCase())) move[e.key.toLowerCase()] = false; });
+        document.addEventListener('keyup', (e) => { 
+            const k = e.key.toLowerCase();
+            if (move.hasOwnProperty(k)) move[k] = false; 
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.1);
+            updateFPS();
+
+            // Handle Bullet Physics & Tracing
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.mesh.position.addScaledVector(b.dir, 450 * delta);
+                b.time += delta;
+
+                let hit = false;
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    if (!enemy.isDead && b.mesh.position.distanceTo(enemy.group.position) < 2.5) {
+                        spawnBlood(b.mesh.position);
+                        enemy.die(b.dir, 35);
+                        hit = true;
+                        break;
+                    }
+                }
+
+                if (hit || b.time > 1.5 || b.mesh.position.y < 0) {
+                    scene.remove(b.mesh);
+                    b.mesh.geometry.dispose();
+                    b.mesh.material.dispose();
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Handle Blood Particles Physics
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.mesh.position.addScaledVector(p.vel, delta);
+                p.vel.y -= 9.8 * delta; // Gravity
+                p.life -= delta;
+                if (p.life <= 0 || p.mesh.position.y < 0) {
+                    scene.remove(p.mesh);
+                    p.mesh.geometry.dispose();
+                    p.mesh.material.dispose();
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Engine / Framework Updates
+            if (controls.isLocked) {
+                if (isDriving) {
+                    cart.update(move, delta);
+                    // Anchor camera inside the Golf Cart dashboard view
+                    const idealOffset = new THREE.Vector3(-0.5, 1.9, 0.2);
+                    idealOffset.applyQuaternion(cart.group.quaternion);
+                    camera.position.copy(cart.group.position).add(idealOffset);
+                } else {
+                    // Standard First-Person walking controls
+                    const speed = 14.0;
+                    velocity.z = (Number(move.w) - Number(move.s)) * speed * delta;
+                    velocity.x = (Number(move.d) - Number(move.a)) * speed * delta;
+                    controls.moveForward(velocity.z);
+                    controls.moveRight(velocity.x);
+                    camera.position.y = 1.8; // Prevent falling beneath ground
+                }
+            }
+
+            // Smooth weapon sway / return from kickback
+            recoil = THREE.MathUtils.lerp(recoil, 0, 10 * delta);
+            viewmodel.position.z = -0.7 + recoil;
+            viewmodel.position.y = -0.38 - (recoil * 0.3);
+
+            // Dynamically manage enemy list and update arrays
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                if (enemies[i].update(delta, camera.position)) {
+                    enemies.splice(i, 1);
+                }
+            }
+
+            // Spawn incoming wave triggers
+            spawnTimer += delta;
+            if (spawnTimer > 4.0 && enemies.filter(e => !e.isDead).length < 8) {
+                spawnEnemies(5);
+                spawnTimer = 0;
+            }
 
         // --- TICK / MAIN ANIMATION LOOP ---
         const clock = new THREE.Clock();
