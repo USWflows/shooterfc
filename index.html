@@ -319,43 +319,35 @@
 
         // --- ENEMIES ---
         class Enemy {
-    constructor(position) {
-        this.group = new THREE.Group();
-        const skinCol = new THREE.Color().setHSL(0.04, 0.4, 0.15 + Math.random() * 0.15);
-        const clothCol = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.3, 0.1);
-        
-        this.skinMat = new THREE.MeshStandardMaterial({ color: skinCol, roughness: 0.7 });
-        this.clothMat = new THREE.MeshStandardMaterial({ color: clothCol, roughness: 0.85 });
-        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 }); 
-        
-        this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.5), this.clothMat); this.torso.position.y = 1.75; this.torso.castShadow = true;
-        this.head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), this.skinMat); this.head.position.y = 2.6; this.head.castShadow = true;
-        
-        // Fixed positioning for jaw and eyes relative to the head
-        const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.22), this.skinMat); jaw.position.set(0, -0.16, 0.1);
-        const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.12), eyeMat); lEye.position.set(-0.14, 0.06, 0.22);
-        const rEye = lEye.clone(); rEye.position.set(0.14, 0.06, 0.22);
-        this.head.add(jaw, lEye, rEye);
-        
-        this.lArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.22), this.skinMat); this.lArm.position.set(-0.5, 2.15, 0.3); this.lArm.rotation.x = -1.3; this.lArm.castShadow = true;
-        this.rArm = this.lArm.clone(); this.rArm.position.set(0.45, 2.15, 0.3);
-        this.lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.25, 0.28), this.clothMat); this.lLeg.position.set(-0.24, 0.62, 0); this.lLeg.castShadow = true;
-        this.rLeg = this.lLeg.clone(); this.rLeg.position.set(0.22, 0.62, 0);
-        
-        this.group.add(this.torso, this.head, this.lArm, this.rArm, this.lLeg, this.rLeg);
-        this.group.position.copy(position);
-        
-        // --- CHANGED: Shorter height adjustment ---
-        // Your player camera height is set to 1.8. 
-        // This keeps enemies around 1.4 to 1.6 units tall, making them noticeably shorter than you.
-        this.group.scale.setScalar(0.75 + Math.random() * 0.1);
-        
-        scene.add(this.group);
-        
-        this.isDead = false; this.deathTime = 0; this.speed = 4.0 + Math.random() * 2.5;
-        this.animOff = Math.random() * 6.28; this.physicsVel = new THREE.Vector3(); this.rotVel = new THREE.Vector3();
-        this.attackCooldown = 0;
-    }
+            constructor(position) {
+                this.group = new THREE.Group();
+                const skinCol = new THREE.Color().setHSL(0.04, 0.4, 0.15 + Math.random() * 0.15);
+                const clothCol = new THREE.Color().setHSL(0.55 + Math.random() * 0.1, 0.3, 0.1);
+                
+                this.skinMat = new THREE.MeshStandardMaterial({ color: skinCol, roughness: 0.7 });
+                this.clothMat = new THREE.MeshStandardMaterial({ color: clothCol, roughness: 0.85 });
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 }); 
+                
+                this.torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.5), this.clothMat); this.torso.position.y = 1.75; this.torso.castShadow = true;
+                this.head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), this.skinMat); this.head.position.y = 2.6; this.head.castShadow = true;
+                const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.12, 0.22), this.skinMat); jaw.position.set(0, -0.16, 0.1);
+                const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.12), eyeMat); lEye.position.set(-0.14, 0.06, 0.22);
+                const rEye = lEye.clone(); rEye.position.set(0.14, 0.06, 0.22);
+                this.head.add(jaw, lEye, rEye);
+                
+                this.lArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.22), this.skinMat); this.lArm.position.set(-0.5, 2.15, 0.3); this.lArm.rotation.x = -1.3; this.lArm.castShadow = true;
+                this.rArm = this.lArm.clone(); this.rArm.position.set(0.45, 2.15, 0.3);
+                this.lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.25, 0.28), this.clothMat); this.lLeg.position.set(-0.24, 0.62, 0); this.lLeg.castShadow = true;
+                this.rLeg = this.lLeg.clone(); this.rLeg.position.set(0.22, 0.62, 0);
+                
+                this.group.add(this.torso, this.head, this.lArm, this.rArm, this.lLeg, this.rLeg);
+                this.group.position.copy(position);
+                this.group.scale.setScalar(0.95 + Math.random() * 0.3);
+                scene.add(this.group);
+                
+                this.isDead = false; this.deathTime = 0; this.speed = 4.0 + Math.random() * 2.5;
+                this.animOff = Math.random() * 6.28; this.physicsVel = new THREE.Vector3(); this.rotVel = new THREE.Vector3();
+                this.attackCooldown = 0;
             }
             die(hitDirection, power) {
                 if (this.isDead) return;
@@ -513,232 +505,84 @@
             const k = e.key.toLowerCase(); if (move.hasOwnProperty(k)) move[k] = true;
             if (k === 'e' && controls.isLocked && camera.position.distanceTo(cart.group.position) < 7) { isDriving = !isDriving; viewmodel.visible = !isDriving; }
         });
-        document.addEventListener('keyup', (e) => { 
-            const k = e.key.toLowerCase();
-            if (move.hasOwnProperty(k)) move[k] = false; 
-        });
+        document.addEventListener('keyup', (e) => { if (move.hasOwnProperty(e.key.toLowerCase())) move[e.key.toLowerCase()] = false; });
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // --- TICK / DELTA-LOCK FPS ENGINE ---
+        let lastTime = performance.now();
+        let frameTicketAccumulator = 0;
 
-        const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const delta = Math.min(clock.getDelta(), 0.1);
+            
+            const time = performance.now();
+            const delta = (time - lastTime) / 1000;
+            lastTime = time;
+
+            // Determine Target Intervals
+            const fpsLimitMode = fpsToggle.value;
+            if (fpsLimitMode !== 'unlocked') {
+                const targetFps = parseInt(fpsLimitMode);
+                const targetInterval = 1 / targetFps;
+                frameTicketAccumulator += delta;
+                
+                // Drop current processing ticket if interval requirement hasn't filled
+                if (frameTicketAccumulator < targetInterval) {
+                    return; 
+                }
+                // Retain balance overhead remainder
+                frameTicketAccumulator %= targetInterval;
+            }
+
             updateFPS();
+            const executionDelta = Math.min(delta, 0.1);
 
-            // Handle Bullet Physics & Tracing
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i];
-                b.mesh.position.addScaledVector(b.dir, 450 * delta);
-                b.time += delta;
-
-                let hit = false;
-                for (let j = enemies.length - 1; j >= 0; j--) {
-                    const enemy = enemies[j];
-                    if (!enemy.isDead && b.mesh.position.distanceTo(enemy.group.position) < 2.5) {
-                        spawnBlood(b.mesh.position);
-                        enemy.die(b.dir, 35);
-                        hit = true;
-                        break;
-                    }
-                }
-
-                if (hit || b.time > 1.5 || b.mesh.position.y < 0) {
-                    scene.remove(b.mesh);
-                    b.mesh.geometry.dispose();
-                    b.mesh.material.dispose();
-                    bullets.splice(i, 1);
-                }
-            }
-
-            // Handle Blood Particles Physics
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.mesh.position.addScaledVector(p.vel, delta);
-                p.vel.y -= 9.8 * delta; // Gravity
-                p.life -= delta;
-                if (p.life <= 0 || p.mesh.position.y < 0) {
-                    scene.remove(p.mesh);
-                    p.mesh.geometry.dispose();
-                    p.mesh.material.dispose();
-                    particles.splice(i, 1);
-                }
-            }
-
-            // Engine / Framework Updates
             if (controls.isLocked) {
+                spawnTimer += executionDelta; if (spawnTimer >= 15) { spawnEnemies(8); spawnTimer = 0; }
                 if (isDriving) {
-                    cart.update(move, delta);
-                    // Anchor camera inside the Golf Cart dashboard view
-                    const idealOffset = new THREE.Vector3(-0.5, 1.9, 0.2);
-                    idealOffset.applyQuaternion(cart.group.quaternion);
-                    camera.position.copy(cart.group.position).add(idealOffset);
+                    cart.update(move, executionDelta);
+                    const offset = new THREE.Vector3(-0.5, 2.2, 0.2).applyQuaternion(cart.group.quaternion);
+                    camera.position.copy(cart.group.position).add(offset);
+                    camera.lookAt(cart.group.position.clone().add(new THREE.Vector3(0, 1.4, 12).applyQuaternion(cart.group.quaternion)));
+                    enemies.forEach(en => { if (!en.isDead && cart.group.position.distanceTo(en.group.position) < 3.8) en.die(new THREE.Vector3().subVectors(en.group.position, cart.group.position).normalize(), Math.abs(cart.speed) * 55); });
                 } else {
-                    // Standard First-Person walking controls
-                    const speed = 14.0;
-                    velocity.z = (Number(move.w) - Number(move.s)) * speed * delta;
-                    velocity.x = (Number(move.d) - Number(move.a)) * speed * delta;
-                    controls.moveForward(velocity.z);
-                    controls.moveRight(velocity.x);
-                    camera.position.y = 1.8; // Prevent falling beneath ground
+                    velocity.x -= velocity.x * 10 * executionDelta; velocity.z -= velocity.z * 10 * executionDelta;
+                    if (move.w) velocity.z -= 420 * executionDelta; if (move.s) velocity.z += 420 * executionDelta;
+                    if (move.a) velocity.x -= 420 * executionDelta; if (move.d) velocity.x += 420 * executionDelta;
+                    controls.moveRight(velocity.x * executionDelta); controls.moveForward(-velocity.z * executionDelta);
+                    camera.position.y = 3.5;
                 }
-            }
 
-            // Smooth weapon sway / return from kickback
-            recoil = THREE.MathUtils.lerp(recoil, 0, 10 * delta);
-            viewmodel.position.z = -0.7 + recoil;
-            viewmodel.position.y = -0.38 - (recoil * 0.3);
-
-            // Dynamically manage enemy list and update arrays
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                if (enemies[i].update(delta, camera.position)) {
-                    enemies.splice(i, 1);
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].mesh.position.addScaledVector(particles[i].vel, executionDelta);
+                    particles[i].vel.y -= 12 * executionDelta; particles[i].life -= executionDelta;
+                    if(particles[i].life <= 0) { scene.remove(particles[i].mesh); particles.splice(i,1); }
                 }
-            }
 
-            // Spawn incoming wave triggers
-            spawnTimer += delta;
-            if (spawnTimer > 4.0 && enemies.filter(e => !e.isDead).length < 8) {
-                spawnEnemies(5);
-                spawnTimer = 0;
-            }
-
-        // --- TICK / MAIN ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const delta = Math.min(clock.getDelta(), 0.1); // Cap delta to prevent clipping issues on lag spikes
-            updateFPS();
-
-            if (controls.isLocked) {
-                if (isDriving) {
-                    // --- DRIVING MODE ---
-                    cart.update(move, delta);
-                    
-                    // Attach camera to the golf cart (overhead/back view)
-                    const relativeCameraOffset = new THREE.Vector3(0, 2.5, -5);
-                    const cameraOffset = relativeCameraOffset.applyMatrix4(cart.group.matrixWorld);
-                    camera.position.copy(cameraOffset);
-                    
-                    // Make camera look slightly ahead of the cart
-                    const targetLook = new THREE.Vector3(0, 1, 4).applyMatrix4(cart.group.matrixWorld);
-                    camera.lookAt(targetLook);
-
-                    // Optional: Run over enemies with the cart
-                    enemies.forEach(enemy => {
-                        if (!enemy.isDead && cart.group.position.distanceTo(enemy.group.position) < 3.0 && Math.abs(cart.speed) > 0.2) {
-                            const hitDir = new THREE.Vector3().subVectors(enemy.group.position, cart.group.position).normalize();
-                            enemy.die(hitDir, Math.abs(cart.speed) * 35);
-                            spawnBlood(enemy.group.position);
+                for (let bi = bullets.length - 1; bi >= 0; bi--) {
+                    const b = bullets[bi]; b.mesh.position.addScaledVector(b.dir, 240 * executionDelta); b.time += executionDelta;
+                    let removed = false;
+                    for (let i = enemies.length - 1; i >= 0; i--) {
+                        if (!enemies[i].isDead && b.mesh.position.distanceTo(enemies[i].group.position.clone().add(new THREE.Vector3(0, 1.8, 0))) < 1.6) { 
+                            spawnBlood(b.mesh.position); enemies[i].die(b.dir, 12); 
+                            scene.remove(b.mesh); bullets.splice(bi, 1); removed = true; break; 
                         }
-                    });
-                } else {
-                    // --- FPS WALKING MODE ---
-                    const speedMultiplier = 18.0;
-                    velocity.x = (Number(move.d) - Number(move.a)) * speedMultiplier * delta;
-                    velocity.z = (Number(move.w) - Number(move.s)) * speedMultiplier * delta;
-
-                    controls.moveRight(velocity.x);
-                    controls.moveForward(velocity.z);
-                    
-                    // Keep player glued to the ground level
-                    camera.position.y = 2.6; 
-                }
-
-                // --- SPAWN SYSTEM ---
-                spawnTimer += delta;
-                if (spawnTimer > 4.0 && enemies.filter(e => !e.isDead).length < 25) {
-                    spawnEnemies(3);
-                    spawnTimer = 0;
-                }
-            }
-
-            // --- ANIMATE VIEWMODEL RECOIL ---
-            recoil = THREE.MathUtils.lerp(recoil, 0, 0.1);
-            viewmodel.position.z = -0.7 - recoil;
-            viewmodel.position.y = -0.38 + (recoil * 0.5);
-
-            // --- UPDATE BULLETS & RAYCAST COLLISIONS ---
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                const b = bullets[i];
-                b.time += delta;
-                const speed = 180 * delta;
-                
-                // Save previous position for raycasting trail accuracy
-                const oldPos = b.mesh.position.clone();
-                b.mesh.position.addScaledVector(b.dir, speed);
-
-                // Setup raycast from old position to new position to detect hits
-                const raycaster = new THREE.Raycaster(oldPos, b.dir, 0, speed + 0.5);
-                
-                let hitDetected = false;
-                for (let j = 0; j < enemies.length; j++) {
-                    const enemy = enemies[j];
-                    if (enemy.isDead) continue;
-
-                    const intersects = raycaster.intersectObjects(enemy.group.children);
-                    if (intersects.length > 0) {
-                        hitDetected = true;
-                        enemy.die(b.dir, 15);
-                        spawnBlood(intersects[0].point);
-                        break;
                     }
+                    if (!removed && b.time > 1.8) { scene.remove(b.mesh); bullets.splice(bi, 1); }
                 }
 
-                // Remove bullet if it hits something or travels for more than 2 seconds
-                if (hitDetected || b.time > 2.0) {
-                    scene.remove(b.mesh);
-                    b.mesh.geometry.dispose();
-                    b.mesh.material.dispose();
-                    bullets.splice(i, 1);
-                }
+                for (let i = enemies.length - 1; i >= 0; i--) { if(enemies[i].update(executionDelta, camera.position)) enemies.splice(i, 1); }
+                
+                renderer.autoClearColor = (blurToggle.value !== "ON");
+                recoil = THREE.MathUtils.lerp(recoil, 0, 0.12); viewmodel.position.z = -0.7 + recoil;
             }
-
-            // --- UPDATE PARTICLES (BLOOD SPLATTERS) ---
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.mesh.position.addScaledVector(p.vel, delta);
-                p.vel.y -= 9.8 * delta; // Gravity effect
-                p.life -= delta * 1.5;
-                p.mesh.scale.setScalar(p.life);
-
-                if (p.life <= 0) {
-                    scene.remove(p.mesh);
-                    p.mesh.geometry.dispose();
-                    p.mesh.material.dispose();
-                    particles.splice(i, 1);
-                }
-            }
-
-            // --- UPDATE ENEMIES ---
-            const playerPosForAI = isDriving ? cart.group.position : camera.position;
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const isRemoved = enemies[i].update(delta, playerPosForAI);
-                if (isRemoved) {
-                    enemies.splice(i, 1);
-                }
-            }
-
-            // Apply screen motion blur effect based on toggle selection
-            if (blurToggle.value === "ON" && controls.isLocked) {
-                renderer.domElement.style.filter = `blur(${Math.min(2, Math.abs(cart.speed) * 1.5)}px)`;
-            } else {
-                renderer.domElement.style.filter = 'none';
-            }
-
             renderer.render(scene, camera);
         }
 
-        // Set starting position for the player camera so you aren't under the map
-        camera.position.set(25, 1.8, 32);
-        
-        // Start the engine loop
+        window.addEventListener('resize', () => {
+            updateResolution();
+        });
+
+        updateResolution();
         animate();
     </script>
 </body>
